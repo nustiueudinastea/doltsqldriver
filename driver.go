@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
 	"github.com/dolthub/dolt/go/cmd/dolt/errhand"
 	"github.com/dolthub/dolt/go/libraries/doltcore/env"
@@ -22,14 +23,15 @@ const (
 	MultiStatementsParam = "multistatements"
 )
 
-var _ driver.Driver = (*doltDriver)(nil)
+var _ driver.Driver = (*DoltDriver)(nil)
 
 func init() {
-	sql.Register(DoltDriverName, &doltDriver{})
+	sql.Register(DoltDriverName, &DoltDriver{})
 }
 
-// doltDriver is a driver.Driver implementation which provides access to a dolt database on the local filesystem
-type doltDriver struct {
+// DoltDriver is a driver.Driver implementation which provides access to a dolt database on the local filesystem
+type DoltDriver struct {
+	MREnv *env.MultiRepoEnv
 }
 
 // Open opens and returns a connection to the datasource referenced by the string provided using the options provided.
@@ -40,7 +42,7 @@ type doltDriver struct {
 // The path needs to point to a directory whose subdirectories are dolt databases.  If a "Create Database" command is
 // run a new subdirectory will be created in this path.
 // The supported parameters are
-func (d *doltDriver) Open(dataSource string) (driver.Conn, error) {
+func (d *DoltDriver) Open(dataSource string) (driver.Conn, error) {
 	ctx := context.Background()
 	var fs filesys.Filesys = filesys.LocalFS
 
@@ -80,6 +82,7 @@ func (d *doltDriver) Open(dataSource string) (driver.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	d.MREnv = mrEnv
 
 	seCfg := &engine.SqlEngineConfig{
 		IsReadOnly: false,
@@ -107,6 +110,10 @@ func (d *doltDriver) Open(dataSource string) (driver.Conn, error) {
 		se:         se,
 		gmsCtx:     gmsCtx,
 	}, nil
+}
+
+func (d *DoltDriver) GetMREnv() *env.MultiRepoEnv {
+	return d.MREnv
 }
 
 // LoadMultiEnvFromDir looks at each subfolder of the given path as a Dolt repository and attempts to return a MultiRepoEnv
