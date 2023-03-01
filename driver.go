@@ -8,6 +8,7 @@ import (
 
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
 	"github.com/dolthub/dolt/go/cmd/dolt/errhand"
+	"github.com/dolthub/dolt/go/libraries/doltcore/dbfactory"
 	"github.com/dolthub/dolt/go/libraries/doltcore/env"
 	"github.com/dolthub/dolt/go/libraries/utils/config"
 	"github.com/dolthub/dolt/go/libraries/utils/filesys"
@@ -110,6 +111,10 @@ func (d *DoltDriver) Open(dataSource string) (driver.Conn, error) {
 		se:         se,
 		gmsCtx:     gmsCtx,
 	}, nil
+}
+
+func (d *DoltDriver) RegisterDBFactory(name string, factory dbfactory.DBFactory) {
+	dbfactory.RegisterFactory(name, factory)
 }
 
 func (d *DoltDriver) GetMREnv() *env.MultiRepoEnv {
