@@ -12,7 +12,6 @@ import (
 	"github.com/dolthub/dolt/go/libraries/doltcore/env"
 	"github.com/dolthub/dolt/go/libraries/utils/config"
 	"github.com/dolthub/dolt/go/libraries/utils/filesys"
-	gms "github.com/dolthub/go-mysql-server/sql"
 )
 
 const (
@@ -79,7 +78,7 @@ func (d *DoltDriver) Open(dataSource string) (driver.Conn, error) {
 		env.UserEmailKey: email[0],
 	})
 
-	mrEnv, err := LoadMultiEnvFromDir(ctx, env.GetCurrentUserHomeDir, cfg, fs, ds.Directory, "0.40.17")
+	mrEnv, err := LoadMultiEnvFromDir(ctx, cfg, fs, ds.Directory, "0.40.17")
 	if err != nil {
 		return nil, err
 	}
@@ -91,10 +90,6 @@ func (d *DoltDriver) Open(dataSource string) (driver.Conn, error) {
 		Autocommit: true,
 	}
 
-	if database, ok := ds.Params[DatabaseParam]; ok && len(database) == 1 {
-		seCfg.InitialDb = database[0]
-	}
-
 	se, err := engine.NewSqlEngine(ctx, mrEnv, engine.FormatNull, seCfg)
 	if err != nil {
 		return nil, err
@@ -104,8 +99,10 @@ func (d *DoltDriver) Open(dataSource string) (driver.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	if database, ok := ds.Params[DatabaseParam]; ok && len(database) == 1 {
+		gmsCtx.SetCurrentDatabase(database[0])
+	}
 
-	gmsCtx.Session.SetClient(gms.Client{User: "root", Address: "%", Capabilities: 0})
 	return &DoltConn{
 		DataSource: ds,
 		se:         se,
@@ -126,20 +123,15 @@ func (d *DoltDriver) GetMREnv() *env.MultiRepoEnv {
 // skipped.
 func LoadMultiEnvFromDir(
 	ctx context.Context,
-	hdp env.HomeDirProvider,
 	cfg config.ReadWriteConfig,
 	fs filesys.Filesys,
-	path, version string) (*env.MultiRepoEnv, error) {
-	envNamesAndPaths, err := env.DBNamesAndPathsFromDir(fs, path)
-
-	if err != nil {
-		return nil, err
-	}
+	path, version string,
+) (*env.MultiRepoEnv, error) {
 
 	multiDbDirFs, err := fs.WithWorkingDir(path)
 	if err != nil {
 		return nil, errhand.VerboseErrorFromError(err)
 	}
 
-	return env.MultiEnvForPaths(ctx, hdp, cfg, multiDbDirFs, version, true, envNamesAndPaths...)
+	return env.MultiEnvForDirectory(ctx, cfg, multiDbDirFs, version, true, nil)
 }

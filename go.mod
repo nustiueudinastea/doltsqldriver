@@ -1,10 +1,9 @@
 module github.com/dolthub/driver
 
 go 1.19
-
 require (
-	github.com/dolthub/dolt/go v0.40.5-0.20230117235533-b8b3d3f8632d
-	github.com/dolthub/go-mysql-server v0.14.1-0.20230222172354-00f95e95d2b3
+	github.com/dolthub/dolt/go v0.40.5-0.20230301005706-8140cc3facfb
+	github.com/dolthub/go-mysql-server v0.14.1-0.20230227175231-786abd289f41
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/stretchr/testify v1.8.0
 )
@@ -22,7 +21,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1 // indirect
 	github.com/dolthub/dolt/go/gen/proto/dolt/services/eventsapi v0.0.0-20201005193433-3ee972b1d078 // indirect
 	github.com/dolthub/fslock v0.0.3 // indirect
-	github.com/dolthub/vitess v0.0.0-20230216234925-189ffe819e56 // indirect
+	github.com/dolthub/vitess v0.0.0-20230223032306-95d4b04eabad // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
