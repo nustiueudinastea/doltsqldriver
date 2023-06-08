@@ -90,7 +90,7 @@ func (d *DoltDriver) Open(dataSource string) (driver.Conn, error) {
 		Autocommit: true,
 	}
 	
-	se, err := engine.NewSqlEngine(ctx, mrEnv, engine.FormatNull, seCfg)
+	se, err := engine.NewSqlEngine(ctx, mrEnv, seCfg)
 	if err != nil {
 		return nil, err
 	}
