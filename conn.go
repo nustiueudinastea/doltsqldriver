@@ -5,17 +5,18 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"io"
+
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
 	gms "github.com/dolthub/go-mysql-server/sql"
-	"io"
 )
 
 var _ driver.Conn = (*DoltConn)(nil)
 
 // DoltConn is a driver.Conn implementation that represents a connection to a dolt database located on the filesystem
 type DoltConn struct {
-	se         *engine.SqlEngine
-	gmsCtx     *gms.Context
+	SE         *engine.SqlEngine
+	GmsCtx     *gms.Context
 	DataSource *DoltDataSource
 }
 
@@ -34,17 +35,17 @@ func (d *DoltConn) Prepare(query string) (driver.Stmt, error) {
 			if !qs.HasMore() {
 				break
 			}
-			d.se.GetUnderlyingEngine()
+			d.SE.GetUnderlyingEngine()
 
 			err = func() error {
-				_, rowIter, err := d.se.Query(d.gmsCtx, current)
+				_, rowIter, err := d.SE.Query(d.GmsCtx, current)
 				if err != nil {
 					return translateError(err)
 				}
-				defer rowIter.Close(d.gmsCtx)
+				defer rowIter.Close(d.GmsCtx)
 
 				for {
-					_, err := rowIter.Next(d.gmsCtx)
+					_, err := rowIter.Next(d.GmsCtx)
 					if err == io.EOF {
 						break
 					} else if err != nil {
@@ -67,21 +68,21 @@ func (d *DoltConn) Prepare(query string) (driver.Stmt, error) {
 		query = current
 	}
 
-	_, err := d.se.GetUnderlyingEngine().PrepareQuery(d.gmsCtx, query)
+	_, err := d.SE.GetUnderlyingEngine().PrepareQuery(d.GmsCtx, query)
 	if err != nil {
 		return nil, translateError(err)
 	}
 
 	return &doltStmt{
 		query:  query,
-		se:     d.se,
-		gmsCtx: d.gmsCtx,
+		se:     d.SE,
+		gmsCtx: d.GmsCtx,
 	}, nil
 }
 
 // Close releases the resources held by the DoltConn instance
 func (d *DoltConn) Close() error {
-	err := d.se.Close()
+	err := d.SE.Close()
 	if err != context.Canceled {
 		return err
 	}
@@ -93,7 +94,7 @@ func (d *DoltConn) Close() error {
 //
 // Deprecated: Use BeginTx instead
 func (d *DoltConn) Begin() (driver.Tx, error) {
-	return d.BeginTx(d.gmsCtx, driver.TxOptions{
+	return d.BeginTx(d.GmsCtx, driver.TxOptions{
 		Isolation: driver.IsolationLevel(sql.LevelSerializable),
 		ReadOnly:  false,
 	})
@@ -106,13 +107,13 @@ func (d *DoltConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.T
 		return nil, fmt.Errorf("isolation level not supported '%d'", opts.Isolation)
 	}
 
-	_, _, err := d.se.Query(d.gmsCtx, "BEGIN;")
+	_, _, err := d.SE.Query(d.GmsCtx, "BEGIN;")
 	if err != nil {
 		return nil, translateError(err)
 	}
 
 	return &doltTx{
-		se:     d.se,
-		gmsCtx: d.gmsCtx,
+		se:     d.SE,
+		gmsCtx: d.GmsCtx,
 	}, nil
 }

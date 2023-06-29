@@ -86,7 +86,7 @@ func (d *doltDriver) Open(dataSource string) (driver.Conn, error) {
 		ServerUser: "root",
 		Autocommit: true,
 	}
-	
+
 	se, err := engine.NewSqlEngine(ctx, mrEnv, seCfg)
 	if err != nil {
 		return nil, err
@@ -102,8 +102,8 @@ func (d *doltDriver) Open(dataSource string) (driver.Conn, error) {
 
 	return &DoltConn{
 		DataSource: ds,
-		se:         se,
-		gmsCtx:     gmsCtx,
+		SE:         se,
+		GmsCtx:     gmsCtx,
 	}, nil
 }
 
@@ -111,16 +111,16 @@ func (d *doltDriver) Open(dataSource string) (driver.Conn, error) {
 // with initialized environments for each of those subfolder data repositories. subfolders whose name starts with '.' are
 // skipped.
 func LoadMultiEnvFromDir(
-		ctx context.Context,
-		cfg config.ReadWriteConfig,
-		fs filesys.Filesys,
-		path, version string,
+	ctx context.Context,
+	cfg config.ReadWriteConfig,
+	fs filesys.Filesys,
+	path, version string,
 ) (*env.MultiRepoEnv, error) {
 
 	multiDbDirFs, err := fs.WithWorkingDir(path)
 	if err != nil {
 		return nil, errhand.VerboseErrorFromError(err)
 	}
-	
+
 	return env.MultiEnvForDirectory(ctx, cfg, multiDbDirFs, version, true, nil)
 }
