@@ -31,7 +31,7 @@ func (d *DoltConn) Prepare(query string) (driver.Stmt, error) {
 			return nil, translateError(err)
 		}
 
-		for {
+		for len(current) > 0 {
 			if !qs.HasMore() {
 				break
 			}
@@ -68,9 +68,11 @@ func (d *DoltConn) Prepare(query string) (driver.Stmt, error) {
 		query = current
 	}
 
-	_, err := d.SE.GetUnderlyingEngine().PrepareQuery(d.GmsCtx, query)
-	if err != nil {
-		return nil, translateError(err)
+	if len(query) > 0 {
+		_, err := d.SE.GetUnderlyingEngine().PrepareQuery(d.GmsCtx, query)
+		if err != nil {
+			return nil, translateError(err)
+		}
 	}
 
 	return &doltStmt{
