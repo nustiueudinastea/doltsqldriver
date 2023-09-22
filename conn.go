@@ -16,8 +16,8 @@ var _ driver.Conn = (*DoltConn)(nil)
 
 // DoltConn is a driver.Conn implementation that represents a connection to a dolt database located on the filesystem
 type DoltConn struct {
-	SE         *engine.SqlEngine
-	GmsCtx     *gms.Context
+	se         *engine.SqlEngine
+	gmsCtx     *gms.Context
 	DataSource *DoltDataSource
 }
 
@@ -36,17 +36,17 @@ func (d *DoltConn) Prepare(query string) (driver.Stmt, error) {
 			if !qs.HasMore() {
 				break
 			}
-			d.SE.GetUnderlyingEngine()
+			d.se.GetUnderlyingEngine()
 
 			err = func() error {
-				_, rowIter, err := d.SE.Query(d.GmsCtx, current)
+				_, rowIter, err := d.se.Query(d.gmsCtx, current)
 				if err != nil {
 					return translateError(err)
 				}
-				defer rowIter.Close(d.GmsCtx)
+				defer rowIter.Close(d.gmsCtx)
 
 				for {
-					_, err := rowIter.Next(d.GmsCtx)
+					_, err := rowIter.Next(d.gmsCtx)
 					if err == io.EOF {
 						break
 					} else if err != nil {
@@ -70,7 +70,7 @@ func (d *DoltConn) Prepare(query string) (driver.Stmt, error) {
 	}
 
 	if len(query) > 0 {
-		_, err := d.SE.GetUnderlyingEngine().PrepareQuery(d.GmsCtx, query)
+		_, err := d.se.GetUnderlyingEngine().PrepareQuery(d.gmsCtx, query)
 		if err != nil {
 			return nil, translateError(err)
 		}
@@ -78,17 +78,17 @@ func (d *DoltConn) Prepare(query string) (driver.Stmt, error) {
 
 	// Reuse the same ctx instance, but update the QueryTime to the current time. Since statements are
 	// executed serially on a connection, it's safe to reuse the same ctx instance and update the time.
-	d.GmsCtx.SetQueryTime(time.Now())
+	d.gmsCtx.SetQueryTime(time.Now())
 	return &doltStmt{
 		query:  query,
-		se:     d.SE,
-		gmsCtx: d.GmsCtx,
+		se:     d.se,
+		gmsCtx: d.gmsCtx,
 	}, nil
 }
 
 // Close releases the resources held by the DoltConn instance
 func (d *DoltConn) Close() error {
-	err := d.SE.Close()
+	err := d.se.Close()
 	if err != context.Canceled {
 		return err
 	}
@@ -100,7 +100,7 @@ func (d *DoltConn) Close() error {
 //
 // Deprecated: Use BeginTx instead
 func (d *DoltConn) Begin() (driver.Tx, error) {
-	return d.BeginTx(d.GmsCtx, driver.TxOptions{
+	return d.BeginTx(d.gmsCtx, driver.TxOptions{
 		Isolation: driver.IsolationLevel(sql.LevelSerializable),
 		ReadOnly:  false,
 	})
@@ -113,13 +113,13 @@ func (d *DoltConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.T
 		return nil, fmt.Errorf("isolation level not supported '%d'", opts.Isolation)
 	}
 
-	_, _, err := d.SE.Query(d.GmsCtx, "BEGIN;")
+	_, _, err := d.se.Query(d.gmsCtx, "BEGIN;")
 	if err != nil {
 		return nil, translateError(err)
 	}
 
 	return &doltTx{
-		se:     d.SE,
-		gmsCtx: d.GmsCtx,
+		se:     d.se,
+		gmsCtx: d.gmsCtx,
 	}, nil
 }
