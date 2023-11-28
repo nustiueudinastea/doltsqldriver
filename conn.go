@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
 	"github.com/dolthub/dolt/go/libraries/doltcore/env"
@@ -79,7 +80,7 @@ func (d *DoltConn) Prepare(query string) (driver.Stmt, error) {
 
 	// Reuse the same ctx instance, but update the QueryTime to the current time. Since statements are
 	// executed serially on a connection, it's safe to reuse the same ctx instance and update the time.
-	// d.gmsCtx.SetQueryTime(time.Now())
+	d.gmsCtx.SetQueryTime(time.Now())
 	return &doltStmt{
 		query:  query,
 		se:     d.se,
