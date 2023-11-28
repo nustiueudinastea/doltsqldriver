@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
+	"github.com/dolthub/dolt/go/libraries/doltcore/env"
 	gms "github.com/dolthub/go-mysql-server/sql"
 )
 
@@ -18,6 +19,7 @@ type DoltConn struct {
 	se         *engine.SqlEngine
 	gmsCtx     *gms.Context
 	DataSource *DoltDataSource
+	mrEnv      *env.MultiRepoEnv
 }
 
 // Prepare returns a prepared statement, bound to this connection.
@@ -121,4 +123,8 @@ func (d *DoltConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.T
 		se:     d.se,
 		gmsCtx: d.gmsCtx,
 	}, nil
+}
+
+func (d *DoltConn) GetMultiRepoEnv() *env.MultiRepoEnv {
+	return d.mrEnv
 }

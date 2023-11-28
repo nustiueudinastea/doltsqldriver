@@ -11,7 +11,6 @@ import (
 	"github.com/dolthub/dolt/go/libraries/doltcore/env"
 	"github.com/dolthub/dolt/go/libraries/utils/config"
 	"github.com/dolthub/dolt/go/libraries/utils/filesys"
-	gms "github.com/dolthub/go-mysql-server/sql"
 )
 
 const (
@@ -105,6 +104,7 @@ func (d *doltDriver) Open(dataSource string) (driver.Conn, error) {
 		DataSource: ds,
 		se:         se,
 		gmsCtx:     gmsCtx,
+		mrEnv:      mrEnv,
 	}, nil
 }
 
@@ -124,14 +124,4 @@ func LoadMultiEnvFromDir(
 	}
 
 	return env.MultiEnvForDirectory(ctx, cfg, multiDbDirFs, version, true, nil)
-}
-
-// CreateCustomConnection creates a custom connection that can take an external sql engine and gms context.
-// This allows the usage of the Dolt SQL driver with a custom sql engine and gms context.
-func CreateCustomConnection(ds *DoltDataSource, se *engine.SqlEngine, gmsCtx *gms.Context) driver.Conn {
-	return &DoltConn{
-		DataSource: ds,
-		se:         se,
-		gmsCtx:     gmsCtx,
-	}
 }
