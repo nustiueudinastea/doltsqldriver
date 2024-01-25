@@ -72,8 +72,8 @@ func (d *doltDriver) Open(dataSource string) (driver.Conn, error) {
 	}
 
 	cfg := config.NewMapConfig(map[string]string{
-		env.UserNameKey:  name[0],
-		env.UserEmailKey: email[0],
+		config.UserNameKey:  name[0],
+		config.UserEmailKey: email[0],
 	})
 
 	mrEnv, err := LoadMultiEnvFromDir(ctx, cfg, fs, ds.Directory, "0.40.17")
@@ -123,5 +123,5 @@ func LoadMultiEnvFromDir(
 		return nil, errhand.VerboseErrorFromError(err)
 	}
 
-	return env.MultiEnvForDirectory(ctx, cfg, multiDbDirFs, version, true, nil)
+	return env.MultiEnvForDirectory(ctx, cfg, multiDbDirFs, version, nil)
 }

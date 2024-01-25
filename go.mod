@@ -2,14 +2,14 @@ module github.com/dolthub/driver
 
 go 1.21
 
-replace github.com/dolthub/dolt/go => /Users/al3x/code/protos/code/dolt/go
+toolchain go1.21.2
 
 require (
-	github.com/dolthub/dolt/go v0.40.5-0.20230824221934-83da423c3547
-	github.com/dolthub/go-mysql-server v0.17.1-0.20231121231446-0a2b90169f58
-	github.com/dolthub/vitess v0.0.0-20231109003730-c0fa018b5ef6
+	github.com/dolthub/dolt/go v0.40.5-0.20231206174848-7c88abef6e9f
+	github.com/dolthub/go-mysql-server v0.17.1-0.20231206191836-7274cc9553f1
+	github.com/dolthub/vitess v0.0.0-20231202001124-09287d7cc674
 	github.com/go-sql-driver/mysql v1.7.2-0.20230713085235-0b18dac46f7f
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 )
 
 require (
@@ -34,7 +34,7 @@ require (
 	github.com/dolthub/jsonpath v0.0.2-0.20230525180605-8dc13778fd72 // indirect
 	github.com/dolthub/maphash v0.0.0-20221220182448-74e1e1ea1577 // indirect
 	github.com/dolthub/swiss v0.1.0 // indirect
-	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -60,9 +60,8 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lestrrat-go/strftime v1.0.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
-	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/hashstructure v1.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.6 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
