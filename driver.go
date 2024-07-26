@@ -114,6 +114,7 @@ func (d *doltDriver) Open(dataSource string) (driver.Conn, error) {
 		DataSource: ds,
 		se:         se,
 		gmsCtx:     gmsCtx,
+		mrEnv:      mrEnv,
 	}, nil
 }
 

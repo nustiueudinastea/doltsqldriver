@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
+	"github.com/dolthub/dolt/go/libraries/doltcore/env"
 	gms "github.com/dolthub/go-mysql-server/sql"
 	"github.com/dolthub/vitess/go/vt/sqlparser"
 )
@@ -19,6 +20,7 @@ type DoltConn struct {
 	se         *engine.SqlEngine
 	gmsCtx     *gms.Context
 	DataSource *DoltDataSource
+	mrEnv      *env.MultiRepoEnv
 }
 
 // Prepare packages up |query| as a *doltStmt so it can be executed. If multistatements mode
@@ -107,4 +109,8 @@ func (d *DoltConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.T
 		se:     d.se,
 		gmsCtx: d.gmsCtx,
 	}, nil
+}
+
+func (d *DoltConn) GetMultiRepoEnv() *env.MultiRepoEnv {
+	return d.mrEnv
 }
