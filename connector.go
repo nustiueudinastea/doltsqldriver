@@ -78,6 +78,7 @@ type Connector struct {
 
 	mu     sync.Mutex
 	se     *engine.SqlEngine
+	mrEnv  *env.MultiRepoEnv
 	openCh chan struct{}
 	closed bool
 }
@@ -123,7 +124,7 @@ func (c *Connector) Driver() driver.Driver {
 
 // Connect implements driver.Connector.
 func (c *Connector) Connect(ctx context.Context) (driver.Conn, error) {
-	se, err := c.getOrOpenEngine(ctx)
+	se, mrEnv, err := c.getOrOpenEngine(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -150,6 +151,7 @@ func (c *Connector) Connect(ctx context.Context) (driver.Conn, error) {
 		se:     se,
 		gmsCtx: gmsCtx,
 		cfg:    &c.cfg,
+		mrEnv:  mrEnv,
 	}, nil
 }
 
@@ -179,17 +181,18 @@ func (c *Connector) Close() error {
 	return nil
 }
 
-func (c *Connector) getOrOpenEngine(ctx context.Context) (*engine.SqlEngine, error) {
+func (c *Connector) getOrOpenEngine(ctx context.Context) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
 	for {
 		c.mu.Lock()
 		if c.closed {
 			c.mu.Unlock()
-			return nil, errors.New("connector is closed")
+			return nil, nil, errors.New("connector is closed")
 		}
 		if c.se != nil {
 			se := c.se
+			mrEnv := c.mrEnv
 			c.mu.Unlock()
-			return se, nil
+			return se, mrEnv, nil
 		}
 		if c.openCh != nil {
 			ch := c.openCh
@@ -199,7 +202,7 @@ func (c *Connector) getOrOpenEngine(ctx context.Context) (*engine.SqlEngine, err
 				// Loop and re-check se/closed.
 				continue
 			case <-ctx.Done():
-				return nil, ctx.Err()
+				return nil, nil, ctx.Err()
 			}
 		}
 
@@ -208,12 +211,13 @@ func (c *Connector) getOrOpenEngine(ctx context.Context) (*engine.SqlEngine, err
 		c.openCh = ch
 		c.mu.Unlock()
 
-		se, err := c.openEngineWithRetry(ctx)
+		se, mrEnv, err := c.openEngineWithRetry(ctx)
 
 		c.mu.Lock()
 		// If we got a successful engine and connector isn't closed, store it.
 		if err == nil && !c.closed {
 			c.se = se
+			c.mrEnv = mrEnv
 		} else if se != nil {
 			// If open succeeded but connector is closed, immediately close it.
 			_ = se.Close()
@@ -223,13 +227,13 @@ func (c *Connector) getOrOpenEngine(ctx context.Context) (*engine.SqlEngine, err
 		c.mu.Unlock()
 
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		// Loop to return the stored engine (or error if closed).
 	}
 }
 
-func (c *Connector) openEngineWithRetry(ctx context.Context) (*engine.SqlEngine, error) {
+func (c *Connector) openEngineWithRetry(ctx context.Context) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
 	// Dolt user config (commit metadata).
 	doltCfg := config.NewMapConfig(map[string]string{
 		config.UserNameKey:  c.cfg.CommitName,
@@ -261,10 +265,10 @@ func (c *Connector) openEngineWithRetry(ctx context.Context) (*engine.SqlEngine,
 	var fs filesys.Filesys = filesys.LocalFS
 	wd, err := fs.WithWorkingDir(c.cfg.Directory)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	open := func(openCtx context.Context) (*engine.SqlEngine, error) {
+	open := func(openCtx context.Context) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
 		return openSqlEngine(openCtx, doltCfg, wd, c.cfg.Directory, c.cfg.Version, seCfg)
 	}
 
@@ -278,10 +282,12 @@ func (c *Connector) openEngineWithRetry(ctx context.Context) (*engine.SqlEngine,
 
 	var lastErr error
 	var se *engine.SqlEngine
+	var mrEnv *env.MultiRepoEnv
 	op := func() error {
-		s, err := open(ctx)
+		s, m, err := open(ctx)
 		if err == nil {
 			se = s
+			mrEnv = m
 			return nil
 		}
 		lastErr = err
@@ -293,11 +299,11 @@ func (c *Connector) openEngineWithRetry(ctx context.Context) (*engine.SqlEngine,
 
 	if err := backoff.Retry(op, bo); err != nil {
 		if lastErr != nil {
-			return nil, lastErr
+			return nil, nil, lastErr
 		}
-		return nil, err
+		return nil, nil, err
 	}
-	return se, nil
+	return se, mrEnv, nil
 }
 
 // Two tracking vars to ensure we only emit metrics once per process, and that we don't emit if the env var is set.

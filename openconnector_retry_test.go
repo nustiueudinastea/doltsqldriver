@@ -24,6 +24,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
+	"github.com/dolthub/dolt/go/libraries/doltcore/env"
 	"github.com/dolthub/dolt/go/libraries/utils/config"
 	"github.com/dolthub/dolt/go/libraries/utils/filesys"
 	"github.com/dolthub/dolt/go/store/nbs"
@@ -37,12 +38,12 @@ func TestOpenConnectorRetriesWhenEnabled(t *testing.T) {
 	var calls int32
 	prev := openSqlEngineForConnector
 	t.Cleanup(func() { openSqlEngineForConnector = prev })
-	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, error) {
+	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
 		n := atomic.AddInt32(&calls, 1)
 		if n <= 3 {
-			return nil, nbs.ErrDatabaseLocked
+			return nil, nil, nbs.ErrDatabaseLocked
 		}
-		return &engine.SqlEngine{}, nil
+		return &engine.SqlEngine{}, nil, nil
 	}
 
 	prevNewCtx := newLocalContextForConnector
@@ -71,9 +72,9 @@ func TestOpenConnectorDoesNotRetryWhenDisabled(t *testing.T) {
 	var calls int32
 	prev := openSqlEngineForConnector
 	t.Cleanup(func() { openSqlEngineForConnector = prev })
-	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, error) {
+	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
 		atomic.AddInt32(&calls, 1)
-		return nil, nbs.ErrDatabaseLocked
+		return nil, nil, nbs.ErrDatabaseLocked
 	}
 
 	prevNewCtx := newLocalContextForConnector
@@ -98,8 +99,8 @@ func TestOpenConnectorRetryRespectsMaxElapsed(t *testing.T) {
 
 	prev := openSqlEngineForConnector
 	t.Cleanup(func() { openSqlEngineForConnector = prev })
-	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, error) {
-		return nil, nbs.ErrDatabaseLocked
+	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
+		return nil, nil, nbs.ErrDatabaseLocked
 	}
 
 	prevNewCtx := newLocalContextForConnector

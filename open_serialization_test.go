@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
+	"github.com/dolthub/dolt/go/libraries/doltcore/env"
 	"github.com/dolthub/dolt/go/libraries/utils/config"
 	"github.com/dolthub/dolt/go/libraries/utils/filesys"
 	gms "github.com/dolthub/go-mysql-server/sql"
@@ -37,7 +38,7 @@ func TestOpenSemSerializesConcurrentOpens(t *testing.T) {
 
 	prev := openSqlEngineForConnector
 	t.Cleanup(func() { openSqlEngineForConnector = prev })
-	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, error) {
+	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
 		cur := atomic.AddInt32(&concurrent, 1)
 		defer atomic.AddInt32(&concurrent, -1)
 		for {
@@ -47,7 +48,7 @@ func TestOpenSemSerializesConcurrentOpens(t *testing.T) {
 			}
 		}
 		time.Sleep(50 * time.Millisecond)
-		return &engine.SqlEngine{}, nil
+		return &engine.SqlEngine{}, nil, nil
 	}
 
 	prevNewCtx := newLocalContextForConnector
@@ -94,10 +95,10 @@ func TestOpenSemRespectsContextCancellation(t *testing.T) {
 	acquired := make(chan struct{})
 	// Install a stub that signals acquisition, then blocks until released.
 	release := make(chan struct{})
-	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, error) {
+	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
 		close(acquired)
 		<-release
-		return &engine.SqlEngine{}, nil
+		return &engine.SqlEngine{}, nil, nil
 	}
 
 	prevNewCtx := newLocalContextForConnector
@@ -118,7 +119,7 @@ func TestOpenSemRespectsContextCancellation(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		_, _ = openSqlEngine(context.Background(), doltCfg, filesys.LocalFS, dir, "0.40.17", seCfg)
+		_, _, _ = openSqlEngine(context.Background(), doltCfg, filesys.LocalFS, dir, "0.40.17", seCfg)
 	}()
 
 	// Wait until the first goroutine has actually acquired the semaphore.
@@ -128,7 +129,7 @@ func TestOpenSemRespectsContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 
-	_, err := openSqlEngine(ctx, doltCfg, filesys.LocalFS, dir, "0.40.17", seCfg)
+	_, _, err := openSqlEngine(ctx, doltCfg, filesys.LocalFS, dir, "0.40.17", seCfg)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, context.DeadlineExceeded)
 

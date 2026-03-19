@@ -55,7 +55,7 @@ type doltDriver struct {
 
 // openSqlEngineForConnector exists to make OpenConnector retry behavior testable without
 // needing to take actual filesystem locks. Production code should leave this nil.
-var openSqlEngineForConnector func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, error)
+var openSqlEngineForConnector func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, *env.MultiRepoEnv, error)
 
 // openSem is a process-level semaphore that serializes openSqlEngine calls.
 // GMS uses global mutable state (system variables, status variables) during
@@ -63,13 +63,13 @@ var openSqlEngineForConnector func(ctx context.Context, cfg config.ReadWriteConf
 // ensure at most one open is in-flight at a time.
 var openSem = make(chan struct{}, 1)
 
-func openSqlEngine(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, error) {
+func openSqlEngine(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
 	// Acquire the process-level open semaphore, respecting context cancellation.
 	select {
 	case openSem <- struct{}{}:
 		defer func() { <-openSem }()
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, nil, ctx.Err()
 	}
 
 	if openSqlEngineForConnector != nil {
@@ -79,16 +79,16 @@ func openSqlEngine(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.F
 	// fs already switched to dir, so passing "." as a path
 	mrEnv, err := LoadMultiEnvFromDir(ctx, cfg, fs, ".", version, seCfg.DBLoadParams)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	go emitUsageEvent(context.Background(), mrEnv)
 	se, err := engine.NewSqlEngine(ctx, mrEnv, seCfg)
 	if err != nil {
 		mrEnv.Close(ctx)
-		return nil, err
+		return nil, nil, err
 	}
-	return se, nil
+	return se, mrEnv, nil
 }
 
 // Open opens and returns a connection to the datasource referenced by the string provided using the options provided.

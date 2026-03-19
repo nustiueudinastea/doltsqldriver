@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
+	"github.com/dolthub/dolt/go/libraries/doltcore/env"
 	gms "github.com/dolthub/go-mysql-server/sql"
 	"github.com/dolthub/vitess/go/vt/sqlparser"
 )
@@ -42,6 +43,7 @@ type DoltConn struct {
 	se     *engine.SqlEngine
 	gmsCtx *gms.Context
 	cfg    *Config
+	mrEnv  *env.MultiRepoEnv
 
 	// non-nil while a query is active.  database/sql serializes
 	// all calls to Conn and any object returned by that Conn
@@ -280,4 +282,8 @@ func (c callbackOnCloseIter) Close(ctx *gms.Context) error {
 	err := c.iter.Close(ctx)
 	c.callback(ctx)
 	return err
+}
+
+func (d *DoltConn) GetMultiRepoEnv() *env.MultiRepoEnv {
+	return d.mrEnv
 }
