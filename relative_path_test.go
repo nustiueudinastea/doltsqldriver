@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
+	"github.com/dolthub/dolt/go/libraries/doltcore/env"
 	"github.com/dolthub/dolt/go/libraries/utils/config"
 	"github.com/dolthub/dolt/go/libraries/utils/filesys"
 	gms "github.com/dolthub/go-mysql-server/sql"
@@ -77,9 +78,9 @@ func TestConnectorRelativePathPassesDot(t *testing.T) {
 	var capturedFs filesys.Filesys
 	prev := openSqlEngineForConnector
 	t.Cleanup(func() { openSqlEngineForConnector = prev })
-	openSqlEngineForConnector = func(_ context.Context, _ config.ReadWriteConfig, fs filesys.Filesys, dir, _ string, _ *engine.SqlEngineConfig) (*engine.SqlEngine, error) {
+	openSqlEngineForConnector = func(_ context.Context, _ config.ReadWriteConfig, fs filesys.Filesys, dir, _ string, _ *engine.SqlEngineConfig) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
 		capturedFs = fs
-		return &engine.SqlEngine{}, nil
+		return &engine.SqlEngine{}, nil, nil
 	}
 
 	prevNewCtx := newLocalContextForConnector
