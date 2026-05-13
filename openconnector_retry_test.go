@@ -24,6 +24,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
+	"github.com/dolthub/dolt/go/libraries/doltcore/dbfactory"
 	"github.com/dolthub/dolt/go/libraries/doltcore/env"
 	"github.com/dolthub/dolt/go/libraries/utils/config"
 	"github.com/dolthub/dolt/go/libraries/utils/filesys"
@@ -92,6 +93,42 @@ func TestOpenConnectorDoesNotRetryWhenDisabled(t *testing.T) {
 	require.Error(t, err)
 	require.True(t, errors.Is(err, nbs.ErrDatabaseLocked))
 	require.Equal(t, int32(1), atomic.LoadInt32(&calls))
+}
+
+func TestOpenConnectorPassesStorageLifecycleParams(t *testing.T) {
+	dir := t.TempDir()
+
+	var sawDisableSingleton bool
+	var sawFailOnLockTimeout bool
+	prev := openSqlEngineForConnector
+	t.Cleanup(func() { openSqlEngineForConnector = prev })
+	openSqlEngineForConnector = func(ctx context.Context, cfg config.ReadWriteConfig, fs filesys.Filesys, dir, version string, seCfg *engine.SqlEngineConfig) (*engine.SqlEngine, *env.MultiRepoEnv, error) {
+		_, sawDisableSingleton = seCfg.DBLoadParams[dbfactory.DisableSingletonCacheParam]
+		_, sawFailOnLockTimeout = seCfg.DBLoadParams[dbfactory.FailOnJournalLockTimeoutParam]
+		return &engine.SqlEngine{}, nil, nil
+	}
+
+	prevNewCtx := newLocalContextForConnector
+	t.Cleanup(func() { newLocalContextForConnector = prevNewCtx })
+	newLocalContextForConnector = func(se *engine.SqlEngine, ctx context.Context) (*gms.Context, error) {
+		return &gms.Context{}, nil
+	}
+
+	dsn := fmt.Sprintf(
+		"file://%s?commitname=Test&commitemail=test@example.com&%s=true&%s=true",
+		dir,
+		DisableSingletonCacheParam,
+		FailOnJournalLockTimeoutParam,
+	)
+	cfg, err := ParseDSN(dsn)
+	require.NoError(t, err)
+	c, err := NewConnector(cfg)
+	require.NoError(t, err)
+	_, err = c.Connect(context.Background())
+	require.NoError(t, err)
+	require.True(t, sawDisableSingleton)
+	require.True(t, sawFailOnLockTimeout)
+	require.NoError(t, c.Close())
 }
 
 func TestOpenConnectorRetryRespectsMaxElapsed(t *testing.T) {
