@@ -256,6 +256,9 @@ func (c *Connector) openEngineWithRetry(ctx context.Context) (*engine.SqlEngine,
 	// correspondingly the NomsBlockStore, journal, files they
 	// open.
 	seCfg.DBLoadParams[dbfactory.DisableSingletonCacheParam] = struct{}{}
+	if paramPresent(c.cfg.Params, FailOnJournalLockTimeoutParam) {
+		seCfg.DBLoadParams[dbfactory.FailOnJournalLockTimeoutParam] = struct{}{}
+	}
 
 	// For deterministic retries on lock contention.
 	if c.cfg.BackOff != nil {
@@ -304,6 +307,14 @@ func (c *Connector) openEngineWithRetry(ctx context.Context) (*engine.SqlEngine,
 		return nil, nil, err
 	}
 	return se, mrEnv, nil
+}
+
+func paramPresent(params map[string][]string, key string) bool {
+	if len(params) == 0 {
+		return false
+	}
+	_, ok := params[key]
+	return ok
 }
 
 // Two tracking vars to ensure we only emit metrics once per process, and that we don't emit if the env var is set.
