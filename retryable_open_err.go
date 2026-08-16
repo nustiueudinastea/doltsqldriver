@@ -18,7 +18,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/dolthub/dolt/go/store/nbs"
+	"github.com/nustiueudinastea/dolt/go/store/nbs"
 )
 
 func isRetryableOpenErr(err error) bool {

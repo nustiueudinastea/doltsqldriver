@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	embedded "github.com/dolthub/driver/v2"
+	embedded "github.com/nustiueudinastea/doltsqldriver/v2"
 )
 
 func errExit(wrapFormat string, err error) {

@@ -20,10 +20,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
-	"github.com/dolthub/dolt/go/libraries/doltcore/env"
-	"github.com/dolthub/dolt/go/libraries/utils/config"
-	"github.com/dolthub/dolt/go/libraries/utils/filesys"
+	"github.com/nustiueudinastea/dolt/go/cmd/dolt/commands/engine"
+	"github.com/nustiueudinastea/dolt/go/libraries/doltcore/env"
+	"github.com/nustiueudinastea/dolt/go/libraries/utils/config"
+	"github.com/nustiueudinastea/dolt/go/libraries/utils/filesys"
 	gms "github.com/dolthub/go-mysql-server/sql"
 	"github.com/stretchr/testify/require"
 )

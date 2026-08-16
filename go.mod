@@ -1,14 +1,14 @@
-module github.com/dolthub/driver/v2
+module github.com/nustiueudinastea/doltsqldriver/v2
 
 go 1.26.2
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/dolthub/dolt/go v0.40.5-0.20260608234721-b5d174ccedd0
 	github.com/dolthub/eventsapi_schema v0.0.0-20260310172945-37a9265ade69
 	github.com/dolthub/go-mysql-server v0.20.1-0.20260617190629-08b4d4af38db
 	github.com/dolthub/vitess v0.0.0-20260617012411-2f308f6cdc23
 	github.com/go-sql-driver/mysql v1.9.3
+	github.com/nustiueudinastea/dolt/go v0.0.0-20260816223032-fffa2866aac8
 	github.com/stretchr/testify v1.11.1
 	gorm.io/driver/mysql v1.5.6
 	gorm.io/gorm v1.25.10
@@ -169,5 +169,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/dolthub/dolt/go => /Users/al3x/code/protos/code/dolt/go

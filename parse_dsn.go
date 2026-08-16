@@ -17,7 +17,7 @@ package embedded
 import (
 	"fmt"
 
-	"github.com/dolthub/dolt/go/libraries/utils/filesys"
+	"github.com/nustiueudinastea/dolt/go/libraries/utils/filesys"
 )
 
 // ParseDSN parses the provided DSN string into a Config suitable for NewConnector.

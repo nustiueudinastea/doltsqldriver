@@ -22,8 +22,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dolthub/dolt/go/cmd/dolt/commands/engine"
-	"github.com/dolthub/dolt/go/libraries/doltcore/env"
+	"github.com/nustiueudinastea/dolt/go/cmd/dolt/commands/engine"
+	"github.com/nustiueudinastea/dolt/go/libraries/doltcore/env"
 	gms "github.com/dolthub/go-mysql-server/sql"
 	"github.com/dolthub/vitess/go/vt/sqlparser"
 )
